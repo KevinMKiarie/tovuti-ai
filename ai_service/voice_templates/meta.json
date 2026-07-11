@@ -1,0 +1,105 @@
+[
+  {
+    "filename": "en-us-male.wav",
+    "label": "American Male · Adam",
+    "gender": "male",
+    "accent": "American English",
+    "description": "Clear American English, male tone",
+    "kokoro_voice": "am_adam"
+  },
+  {
+    "filename": "en-us-female.wav",
+    "label": "American Female · Heart",
+    "gender": "female",
+    "accent": "American English",
+    "description": "Warm American English, female tone",
+    "kokoro_voice": "af_heart"
+  },
+  {
+    "filename": "en-gb-male.wav",
+    "label": "British Male · George",
+    "gender": "male",
+    "accent": "British English",
+    "description": "British English, male tone",
+    "kokoro_voice": "bm_george"
+  },
+  {
+    "filename": "en-gb-female.wav",
+    "label": "British Female · Emma",
+    "gender": "female",
+    "accent": "British English",
+    "description": "British English, female tone",
+    "kokoro_voice": "bf_emma"
+  },
+  {
+    "filename": "en-au.wav",
+    "label": "Australian · Michael",
+    "gender": "male",
+    "accent": "Australian English",
+    "description": "Australian English accent",
+    "kokoro_voice": "am_michael"
+  },
+  {
+    "label": "American Female · Bella",
+    "gender": "female",
+    "accent": "American English",
+    "description": "Expressive American English, female tone",
+    "kokoro_voice": "af_bella"
+  },
+  {
+    "label": "American Female · Nicole",
+    "gender": "female",
+    "accent": "American English",
+    "description": "Smooth American English, female tone",
+    "kokoro_voice": "af_nicole"
+  },
+  {
+    "label": "American Female · Sky",
+    "gender": "female",
+    "accent": "American English",
+    "description": "Bright American English, female tone",
+    "kokoro_voice": "af_sky"
+  },
+  {
+    "label": "American Male · Fenrir",
+    "gender": "male",
+    "accent": "American English",
+    "description": "Deep American English, male tone",
+    "kokoro_voice": "am_fenrir"
+  },
+  {
+    "label": "American Male · Liam",
+    "gender": "male",
+    "accent": "American English",
+    "description": "Casual American English, male tone",
+    "kokoro_voice": "am_liam"
+  },
+  {
+    "label": "American Male · Echo",
+    "gender": "male",
+    "accent": "American English",
+    "description": "Resonant American English, male tone",
+    "kokoro_voice": "am_echo"
+  },
+  {
+    "label": "American Male · Eric",
+    "gender": "male",
+    "accent": "American English",
+    "description": "Measured American English, male tone",
+    "kokoro_voice": "am_eric"
+  },
+  {
+    "label": "British Female · Isabella",
+    "gender": "female",
+    "accent": "British English",
+    "description": "Refined British English, female tone",
+    "kokoro_voice": "bf_isabella"
+  },
+  {
+    "label": "British Male · Lewis",
+    "gender": "male",
+    "accent": "British English",
+    "description": "Authoritative British English, male tone",
+    "kokoro_voice": "bm_lewis"
+  }
+]
