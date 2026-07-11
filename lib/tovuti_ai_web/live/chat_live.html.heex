@@ -1,0 +1,808 @@
+<div
+  id="chat-root"
+  phx-hook="AudioPlayer"
+  class="flex h-screen w-screen overflow-hidden bg-[#fafafa] dark:bg-[#0a0a0a] text-gray-900 dark:text-[#e8e8e8] antialiased"
+>
+
+  <nav class={[
+    "flex flex-col shrink-0 py-3 border-r border-black/[0.06] dark:border-white/[0.06]",
+    "transition-[width] duration-200 ease-in-out overflow-hidden",
+    @sidebar_open && "w-[240px]",
+    not @sidebar_open && "w-[52px] items-center"
+  ]}>
+
+    <button
+      phx-click="toggle_sidebar"
+      class={[
+        "w-9 h-9 flex items-center justify-center rounded-lg transition-all duration-150",
+        "text-black/40 hover:text-black/80 hover:bg-black/[0.07] dark:text-white/40 dark:hover:text-white/80 dark:hover:bg-white/[0.07]",
+        @sidebar_open && "ml-1.5"
+      ]}
+      title={if @sidebar_open, do: "Collapse sidebar", else: "Expand sidebar"}
+    >
+      <%= if @sidebar_open do %>
+        <svg class="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 19l-7-7 7-7"/>
+        </svg>
+      <% else %>
+        <svg class="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      <% end %>
+    </button>
+
+    <button
+      phx-click="new_chat"
+      class={[
+        "mt-1 flex items-center gap-3 rounded-lg transition-all duration-150",
+        "text-black/40 hover:text-black/80 hover:bg-black/[0.07] dark:text-white/40 dark:hover:text-white/80 dark:hover:bg-white/[0.07]",
+        @sidebar_open && "w-[calc(100%-12px)] ml-1.5 px-2.5 h-9",
+        not @sidebar_open && "w-9 h-9 justify-center"
+      ]}
+      title="New chat"
+    >
+      <svg class="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z"/>
+      </svg>
+      <%= if @sidebar_open do %>
+        <span class="text-sm font-medium truncate">New chat</span>
+      <% end %>
+    </button>
+
+    <%= if @sidebar_open do %>
+      <div class="mt-4 flex-1 overflow-y-auto px-1.5">
+        <%= if @threads != [] do %>
+          <p class="text-[10px] uppercase tracking-widest text-black/30 dark:text-white/30 px-2 mb-1.5 select-none">
+            Recent
+          </p>
+          <%= for thread <- @threads do %>
+            <div class="group relative flex items-center">
+              <button
+                phx-click="load_thread"
+                phx-value-id={thread.id}
+                class={[
+                  "flex-1 min-w-0 text-left px-2.5 py-2 pr-7 rounded-lg text-sm truncate transition-colors duration-150 block",
+                  @current_thread && @current_thread.id == thread.id &&
+                    "bg-black/[0.08] dark:bg-white/[0.08] text-black/80 dark:text-white/80 font-medium",
+                  (!@current_thread || @current_thread.id != thread.id) &&
+                    "text-black/55 dark:text-white/55 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] hover:text-black/80 dark:hover:text-white/80"
+                ]}
+              >
+                <%= thread.title || "Untitled" %>
+              </button>
+              <button
+                phx-click="delete_thread"
+                phx-value-id={thread.id}
+                class="absolute right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 w-6 h-6 flex items-center justify-center rounded bg-red-500 hover:bg-red-600 dark:bg-red-500 dark:hover:bg-red-600 text-white"
+                title="Delete conversation"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>
+                </svg>
+              </button>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="flex-1" />
+    <% end %>
+
+    <div class={["flex flex-col items-start justify-center gap-1", @sidebar_open && "px-1.5"]}>
+
+      <button
+        phx-click="open_settings"
+        class={[
+          "flex items-start gap-3 rounded-lg transition-all duration-150",
+          "text-black/40 hover:text-black/80 hover:bg-black/[0.07] dark:text-white/40 dark:hover:text-white/80 dark:hover:bg-white/[0.07]",
+          @sidebar_open && "w-full px-2.5 h-9",
+          not @sidebar_open && "w-9 h-9 justify-center"
+        ]}
+        title="Settings"
+      >
+        <svg class="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"/>
+          <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+        </svg>
+        <%= if @sidebar_open do %>
+          <span class="text-sm truncate">Settings</span>
+        <% end %>
+      </button>
+
+      <div class={["flex flex-col items-start gap-1", @sidebar_open && "w-full"]}>
+        <a
+          href={~p"/users/settings"}
+          class={[
+            "flex items-center gap-3 rounded-lg py-1 transition-colors duration-150 group",
+            "hover:bg-black/[0.05] dark:hover:bg-white/[0.05]",
+            @sidebar_open && "flex-1 min-w-0 px-2.5",
+            not @sidebar_open && "justify-center w-9 h-9"
+          ]}
+          title="Account settings"
+        >
+          <div class="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-teal-400 flex items-center justify-center text-[11px] font-semibold text-white select-none shrink-0">
+            <%= String.first(@current_scope.user.email) |> String.upcase() %>
+          </div>
+          <%= if @sidebar_open do %>
+            <span class="text-xs text-black/40 dark:text-white/40 truncate group-hover:text-black/65 dark:group-hover:text-white/65 transition-colors duration-150">
+              <%= @current_scope.user.email %>
+            </span>
+          <% end %>
+        </a>
+
+        <%= if @sidebar_open do %>
+          <.link
+            href={~p"/users/log-out"}
+            method="delete"
+            class="w-8 h-8 flex items-center justify-center rounded-lg text-black/30 hover:text-black/70 hover:bg-black/[0.07] dark:text-white/30 dark:hover:text-white/70 dark:hover:bg-white/[0.07] transition-all duration-150 shrink-0"
+            title="Log out"
+          >
+            <svg class="w-[16px] h-[16px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </.link>
+        <% else %>
+          <.link
+            href={~p"/users/log-out"}
+            method="delete"
+            class="w-9 h-9 flex items-center justify-center rounded-lg text-black/30 hover:text-black/70 hover:bg-black/[0.07] dark:text-white/30 dark:hover:text-white/70 dark:hover:bg-white/[0.07] transition-all duration-150"
+            title="Log out"
+          >
+            <svg class="w-[16px] h-[16px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+
+          </.link>
+        <% end %>
+      </div>
+
+    </div>
+
+  </nav>
+
+  <div class="flex flex-col flex-1 min-w-0">
+
+    <%= if @voice_mode do %>
+
+      <%!-- ── Voice orb screen ──────────────────────────────────────────────── --%>
+      <div
+        id="voice-orb-root"
+        phx-hook="VoiceOrb"
+        class="flex flex-col items-center justify-center flex-1 gap-4 relative select-none overflow-hidden"
+      >
+
+        <%!-- Mode toggle --%>
+        <div class="absolute top-5 left-0 right-0 flex justify-center z-10">
+          <div class="inline-flex items-center gap-0.5 bg-black/[0.06] dark:bg-white/[0.06] rounded-full p-0.5">
+            <button
+              phx-click="set_voice_mode"
+              phx-value-mode="chat"
+              class="text-xs font-medium px-4 py-1.5 rounded-full transition-all duration-150 text-black/40 dark:text-white/40 hover:text-black/65 dark:hover:text-white/65"
+            >Chat</button>
+            <button
+              phx-click="set_voice_mode"
+              phx-value-mode="voice"
+              class="flex items-center gap-1.5 text-xs font-medium px-4 py-1.5 rounded-full transition-all duration-150 bg-white dark:bg-[#1c1c1c] text-black/80 dark:text-white/80 shadow-sm"
+            >
+              Voice
+              <span class="text-[9px] font-semibold uppercase tracking-wider bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400 px-1.5 py-0.5 rounded-full leading-none">
+                Beta
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <%!-- Three.js canvas appended here by VoiceOrb hook --%>
+
+        <%!-- State label --%>
+        <p
+          id="orb-label"
+          class="text-sm tracking-wide text-black/35 dark:text-white/35"
+        >Listening…</p>
+
+        <%!-- Rolling transcript (user speech) --%>
+        <p
+          id="orb-transcript"
+          class="text-sm text-center max-w-sm text-black/55 dark:text-white/55 min-h-[1.5em] leading-relaxed px-8"
+        ></p>
+
+        <%!-- AI response text --%>
+        <p
+          id="orb-response"
+          class="text-sm text-center max-w-md text-black/70 dark:text-white/70 min-h-[2.5em] leading-relaxed px-8 whitespace-pre-wrap"
+        ></p>
+
+      </div>
+
+    <% else %>
+
+      <%!-- ── Normal chat view ──────────────────────────────────────────────── --%>
+
+      <%= if @messages == [] and not @streaming do %>
+
+      <div class="flex flex-col items-center justify-center flex-1 gap-8 px-6">
+
+        <h1 class="text-[2.8rem] font-extralight tracking-tight text-black/90 dark:text-white/90 select-none">
+          tovuti
+        </h1>
+
+        <div class="w-full max-w-[680px]">
+
+          <%!-- Mode toggle --%>
+          <div class="flex justify-center mb-3">
+            <div class="inline-flex items-center gap-0.5 bg-black/[0.05] dark:bg-white/[0.05] rounded-full p-0.5">
+              <button
+                phx-click="set_voice_mode"
+                phx-value-mode="chat"
+                class="text-xs font-medium px-4 py-1.5 rounded-full transition-all duration-150 bg-white dark:bg-[#1c1c1c] text-black/80 dark:text-white/80 shadow-sm"
+              >Chat</button>
+              <button
+                phx-click="set_voice_mode"
+                phx-value-mode="voice"
+                class="flex items-center gap-1.5 text-xs font-medium px-4 py-1.5 rounded-full transition-all duration-150 text-black/40 dark:text-white/40 hover:text-black/65 dark:hover:text-white/65"
+              >
+                Voice
+                <span class="text-[9px] font-semibold uppercase tracking-wider bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400 px-1.5 py-0.5 rounded-full leading-none">
+                  Beta
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <form
+            phx-submit="submit"
+            phx-change="update_input"
+            class="bg-white dark:bg-[#141414] border border-black/[0.09] dark:border-white/[0.09] rounded-2xl px-4 pt-4 pb-3 focus-within:border-black/[0.2] dark:focus-within:border-white/[0.18] transition-colors duration-200 shadow-sm dark:shadow-none"
+          >
+            <textarea
+              id="chat-input-zero"
+              name="query"
+              rows="3"
+              placeholder="Ask anything..."
+              phx-hook="ChatInput"
+              phx-keydown="keydown"
+              disabled={@streaming}
+              class="w-full bg-transparent text-sm text-gray-900 dark:text-white/90 placeholder:text-black/25 dark:placeholder:text-white/25 resize-none outline-none leading-relaxed"
+            ><%= @input %></textarea>
+
+            <div class="flex items-center mt-3 gap-2">
+
+              <button
+                type="button"
+                id="mic-btn"
+                phx-hook="MicRecorder"
+                class={[
+                  "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-150",
+                  @recording && "text-red-500 dark:text-red-400 animate-pulse",
+                  not @recording && "text-black/40 hover:text-black/70 hover:bg-black/[0.06] dark:text-white/40 dark:hover:text-white/70 dark:hover:bg-white/[0.07]"
+                ]}
+                title="Click to speak"
+              >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3Z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" x2="12" y1="19" y2="22"/>
+                </svg>
+              </button>
+
+              <div class="flex-1" />
+
+              <span class="text-xs text-black/30 dark:text-white/30 bg-black/[0.05] dark:bg-white/[0.05] rounded-full px-3 py-1 select-none">
+                <%= @active_model %>
+              </span>
+
+              <%= if @streaming do %>
+                <button
+                  type="button"
+                  phx-click="stop_generation"
+                  class="w-8 h-8 rounded-full bg-gray-900 dark:bg-[#e8e8e8] text-white dark:text-[#0a0a0a] flex items-center justify-center hover:bg-black dark:hover:bg-white transition-colors duration-150"
+                  title="Stop generation"
+                >
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="4" y="4" width="16" height="16" rx="2"/>
+                  </svg>
+                </button>
+              <% else %>
+                <button
+                  type="submit"
+                  disabled={@input == ""}
+                  class="w-8 h-8 rounded-full bg-gray-900 dark:bg-[#e8e8e8] text-white dark:text-[#0a0a0a] flex items-center justify-center disabled:opacity-20 hover:bg-black dark:hover:bg-white transition-colors duration-150"
+                >
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"/>
+                  </svg>
+                </button>
+              <% end %>
+
+            </div>
+          </form>
+
+          <p class="text-center text-[11px] text-black/20 dark:text-white/20 mt-3 select-none tracking-wide">
+            Running locally · Ollama + <%= @active_model %>
+          </p>
+        </div>
+
+      </div>
+
+    <% else %>
+
+      <div id="messages-scroll" class="flex-1 overflow-y-auto py-10">
+        <div class="max-w-[780px] mx-auto px-6 space-y-8">
+
+          <%= for {msg, index} <- Enum.with_index(@messages) do %>
+            <%= if msg.role == "user" do %>
+              <div class="group flex justify-end">
+                <div class="flex flex-col items-end gap-1">
+                  <div class="bg-gray-100 dark:bg-[#1c1c1c] border border-black/[0.06] dark:border-white/[0.07] rounded-3xl rounded-br-md px-5 py-3 max-w-lg text-sm text-gray-900 dark:text-white/90 leading-relaxed">
+                    <%= msg.content %>
+                  </div>
+                  <%= if not @streaming do %>
+                    <button
+                      phx-click="edit_message"
+                      phx-value-index={index}
+                      class="opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-xs text-black/35 hover:text-black/65 dark:text-white/35 dark:hover:text-white/65 px-1"
+                    >
+                      Edit
+                    </button>
+                  <% end %>
+                </div>
+              </div>
+            <% else %>
+              <div class="flex flex-col gap-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-teal-400 shrink-0" />
+                  <span class="text-[11px] text-black/30 dark:text-white/30 tracking-widest uppercase font-medium select-none">
+                    tovuti
+                  </span>
+                  <button
+                    type="button"
+                    data-tts-play
+                    data-tts-content={msg.content}
+                    class="ml-0.5 text-black/25 hover:text-black/60 dark:text-white/20 dark:hover:text-white/55 transition-colors duration-150"
+                    title="Read aloud"
+                  >
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="text-gray-700 dark:text-[#d4d4d4] text-sm leading-[1.8] pl-7 whitespace-pre-wrap">
+                  <%= msg.content %>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+
+          <%!-- Retry button after last assistant message --%>
+          <%= if not @streaming and @messages != [] and (List.last(@messages) || %{}).role == "assistant" do %>
+            <div class="pl-7">
+              <button
+                phx-click="retry_last"
+                class="text-xs text-black/30 hover:text-black/60 dark:text-white/30 dark:hover:text-white/60 transition-colors duration-150 flex items-center gap-1"
+              >
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                </svg>
+                Regenerate
+              </button>
+            </div>
+          <% end %>
+
+          <%!-- Streaming indicator --%>
+          <%= if @streaming or @current_response != "" do %>
+            <div class="flex flex-col gap-3">
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-teal-400 shrink-0" />
+                <span class="text-[11px] text-black/30 dark:text-white/30 tracking-widest uppercase font-medium select-none">
+                  tovuti
+                </span>
+              </div>
+              <div class="text-gray-700 dark:text-[#d4d4d4] text-sm leading-[1.8] pl-7 whitespace-pre-wrap">
+                <%= if @current_response == "" do %>
+                  <span class="inline-flex items-center gap-1.5 py-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-[#555] animate-bounce [animation-delay:0ms]"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-[#555] animate-bounce [animation-delay:120ms]"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-[#555] animate-bounce [animation-delay:240ms]"></span>
+                  </span>
+                <% else %>
+                  <%= @current_response %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <%!-- Action confirmation card --%>
+          <%= if @pending_action do %>
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 shrink-0 flex items-center justify-center">
+                  <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                  </svg>
+                </div>
+                <span class="text-[11px] text-black/30 dark:text-white/30 tracking-widest uppercase font-medium select-none">
+                  action required
+                </span>
+              </div>
+              <div class="pl-7">
+                <div class="max-w-sm rounded-2xl border border-black/[0.08] dark:border-white/[0.07] bg-white dark:bg-[#161616] shadow-sm overflow-hidden">
+                  <%!-- Card header --%>
+                  <div class="flex items-center gap-3 px-4 pt-4 pb-3.5 border-b border-black/[0.05] dark:border-white/[0.05]">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-amber-50 dark:bg-amber-400/10">
+                      <%= case @pending_action.type do %>
+                        <% "send_whatsapp" -> %>
+                          <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                          </svg>
+                        <% "send_email" -> %>
+                          <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                          </svg>
+                        <% "create_booking" -> %>
+                          <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>
+                          </svg>
+                        <% "reschedule_meeting" -> %>
+                          <svg class="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M12 7v5l3 3"/>
+                          </svg>
+                        <% _ -> %>
+                          <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                          </svg>
+                      <% end %>
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-[10px] text-black/35 dark:text-white/35 uppercase tracking-widest font-medium">Awaiting confirmation</p>
+                      <p class="text-sm font-semibold text-black/80 dark:text-white/80 leading-tight mt-0.5">
+                        <%= case @pending_action.type do %>
+                          <% "send_whatsapp" -> %>Send WhatsApp
+                          <% "send_email" -> %>Send Email
+                          <% "create_booking" -> %>Create Booking
+                          <% "reschedule_meeting" -> %>Reschedule Meeting
+                          <% other -> %><%= other %>
+                        <% end %>
+                      </p>
+                    </div>
+                  </div>
+                  <%!-- Description --%>
+                  <div class="px-4 py-3.5">
+                    <p class="text-sm text-black/60 dark:text-white/50 leading-relaxed">
+                      <%= @pending_action.description %>
+                    </p>
+                  </div>
+                  <%!-- Buttons --%>
+                  <div class="flex items-center gap-2 px-4 pb-4">
+                    <%= if @action_executing do %>
+                      <div class="flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce [animation-delay:0ms]"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce [animation-delay:120ms]"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce [animation-delay:240ms]"></span>
+                        <span class="text-xs text-black/40 dark:text-white/40 ml-1">Executing…</span>
+                      </div>
+                    <% else %>
+                      <div class="flex flex-col gap-2 w-full">
+                        <div class="flex gap-2">
+                          <button
+                            phx-click="confirm_action"
+                            class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-black dark:bg-white text-white dark:text-black text-sm font-medium hover:bg-black/85 dark:hover:bg-white/85 transition-colors duration-150"
+                          >
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            Confirm
+                          </button>
+                          <button
+                            phx-click="cancel_action"
+                            class="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-black/[0.1] dark:border-white/[0.1] text-sm text-black/55 dark:text-white/55 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors duration-150"
+                          >
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M18 6 6 18M6 6l12 12"/>
+                            </svg>
+                            Cancel
+                          </button>
+                        </div>
+                        <p class="text-[11px] text-black/25 dark:text-white/25 flex items-center gap-1">
+                          <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3Z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" x2="12" y1="19" y2="22"/>
+                          </svg>
+                          Say "confirm" or "cancel"
+                        </p>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% end %>
+
+          <%!-- Compose & Send card --%>
+          <%= if @compose_generating or @compose_draft != nil do %>
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-blue-500 shrink-0 flex items-center justify-center">
+                  <svg class="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z"/>
+                  </svg>
+                </div>
+                <span class="text-[11px] text-black/30 dark:text-white/30 tracking-widest uppercase font-medium select-none">
+                  composing
+                </span>
+              </div>
+              <div class="pl-7">
+                <div class="w-full max-w-lg rounded-2xl border border-black/[0.08] dark:border-white/[0.07] bg-white dark:bg-[#161616] shadow-sm overflow-hidden">
+                  <%!-- Header --%>
+                  <div class="flex items-center justify-between px-4 pt-4 pb-3 border-b border-black/[0.05] dark:border-white/[0.05]">
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-xl bg-violet-50 dark:bg-violet-400/10 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z"/>
+                        </svg>
+                      </div>
+                      <div class="min-w-0">
+                        <p class="text-[10px] text-black/35 dark:text-white/35 uppercase tracking-widest font-medium">Compose & Send</p>
+                        <%= if @compose_draft do %>
+                          <p class="text-sm font-semibold text-black/80 dark:text-white/80 leading-tight mt-0.5 capitalize truncate">
+                            <%= @compose_draft.style %> · "<%= @compose_draft.prompt %>"
+                          </p>
+                        <% end %>
+                      </div>
+                    </div>
+                    <%= if @compose_draft && @compose_draft.content && not @compose_generating && not @compose_sending do %>
+                      <button
+                        phx-click="compose_toggle_edit"
+                        class={[
+                          "text-xs px-2.5 py-1 rounded-lg transition-colors duration-150 shrink-0",
+                          @compose_editing && "bg-violet-100 dark:bg-violet-400/15 text-violet-700 dark:text-violet-300",
+                          not @compose_editing && "text-black/35 dark:text-white/35 hover:text-black/60 dark:hover:text-white/60 hover:bg-black/[0.05] dark:hover:bg-white/[0.05]"
+                        ]}
+                      >
+                        <%= if @compose_editing, do: "Done", else: "Edit" %>
+                      </button>
+                    <% end %>
+                  </div>
+
+                  <%!-- Content area --%>
+                  <div class="px-4 py-4">
+                    <%= if @compose_generating do %>
+                      <div class="flex items-center gap-2 py-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce [animation-delay:0ms]"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce [animation-delay:120ms]"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce [animation-delay:240ms]"></span>
+                        <span class="text-sm text-black/40 dark:text-white/40 ml-1">
+                          Generating <%= @compose_draft && @compose_draft.style %>…
+                        </span>
+                      </div>
+                    <% else %>
+                      <%= if @compose_editing do %>
+                        <form phx-change="update_compose_content">
+                          <textarea
+                            name="content"
+                            rows="8"
+                            class="w-full bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.07] dark:border-white/[0.07] rounded-xl px-3 py-2.5 text-sm text-gray-800 dark:text-white/80 leading-relaxed resize-none outline-none focus:border-violet-400/50 dark:focus:border-violet-400/30 transition-colors font-mono"
+                          ><%= @compose_draft && @compose_draft.content %></textarea>
+                        </form>
+                      <% else %>
+                        <pre class="text-sm text-gray-800 dark:text-white/75 leading-relaxed whitespace-pre-wrap font-sans"><%= (@compose_draft && @compose_draft.content) || "" %></pre>
+                      <% end %>
+                    <% end %>
+                  </div>
+
+                  <%!-- Recipients list --%>
+                  <%= if @compose_draft && @compose_draft.labels != [] do %>
+                    <div class="px-4 pb-3 flex items-center gap-1.5 flex-wrap">
+                      <span class="text-xs text-black/35 dark:text-white/35 mr-0.5">To:</span>
+                      <%= for label <- @compose_draft.labels do %>
+                        <span class="text-xs bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55 px-2 py-0.5 rounded-full">
+                          <%= label %>
+                        </span>
+                      <% end %>
+                    </div>
+                  <% end %>
+
+                  <%!-- Action buttons --%>
+                  <div class="flex items-center gap-2 px-4 pb-4 flex-wrap">
+                    <%= if @compose_sending do %>
+                      <div class="flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-bounce [animation-delay:0ms]"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-bounce [animation-delay:120ms]"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-bounce [animation-delay:240ms]"></span>
+                        <span class="text-xs text-black/40 dark:text-white/40 ml-1">Sending…</span>
+                      </div>
+                    <% else %>
+                      <%= if not @compose_generating && @compose_draft && @compose_draft.content do %>
+                        <button
+                          phx-click="compose_send"
+                          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white text-sm font-medium transition-colors duration-150"
+                        >
+                          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                          </svg>
+                          Send via WhatsApp
+                        </button>
+                      <% end %>
+                      <button
+                        phx-click="compose_regenerate"
+                        disabled={@compose_generating}
+                        class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-black/[0.1] dark:border-white/[0.1] text-sm text-black/55 dark:text-white/55 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] disabled:opacity-40 transition-colors duration-150"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>
+                        </svg>
+                        Regenerate
+                      </button>
+                      <button
+                        phx-click="compose_cancel"
+                        class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-black/[0.1] dark:border-white/[0.1] text-sm text-black/40 dark:text-white/40 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors duration-150"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M18 6 6 18M6 6l12 12"/>
+                        </svg>
+                        Cancel
+                      </button>
+                    <% end %>
+                  </div>
+                  <%= if not @compose_generating && not @compose_sending && @compose_draft && @compose_draft.content do %>
+                    <div class="px-4 pb-3">
+                      <p class="text-[11px] text-black/25 dark:text-white/25 flex items-center gap-1">
+                        <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3Z"/>
+                          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                          <line x1="12" x2="12" y1="19" y2="22"/>
+                        </svg>
+                        Say "send", "regenerate", or "cancel"
+                      </p>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+
+        </div>
+      </div>
+
+      <%!-- Playback controls — managed entirely by AudioPlayer hook via JS --%>
+      <div id="playback-bar" phx-update="ignore" class="flex justify-center items-center shrink-0 h-8"></div>
+
+      <%!-- Bottom input --%>
+      <div class="px-4 pb-5">
+        <div class="max-w-[780px] mx-auto">
+
+          <%!-- Mode toggle --%>
+          <div class="flex justify-center mb-3">
+            <div class="inline-flex items-center gap-0.5 bg-black/[0.05] dark:bg-white/[0.05] rounded-full p-0.5">
+              <button
+                phx-click="set_voice_mode"
+                phx-value-mode="chat"
+                class="text-xs font-medium px-4 py-1.5 rounded-full transition-all duration-150 bg-white dark:bg-[#1c1c1c] text-black/80 dark:text-white/80 shadow-sm"
+              >Chat</button>
+              <button
+                phx-click="set_voice_mode"
+                phx-value-mode="voice"
+                class="flex items-center gap-1.5 text-xs font-medium px-4 py-1.5 rounded-full transition-all duration-150 text-black/40 dark:text-white/40 hover:text-black/65 dark:hover:text-white/65"
+              >
+                Voice
+                <span class="text-[9px] font-semibold uppercase tracking-wider bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400 px-1.5 py-0.5 rounded-full leading-none">
+                  Beta
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <form
+            phx-submit="submit"
+            phx-change="update_input"
+            class="bg-white dark:bg-[#141414] border border-black/[0.09] dark:border-white/[0.09] rounded-2xl px-4 pt-4 pb-3 focus-within:border-black/[0.2] dark:focus-within:border-white/[0.18] transition-colors duration-200 shadow-sm dark:shadow-none"
+          >
+            <textarea
+              id="chat-input"
+              name="query"
+              rows="2"
+              placeholder="Ask a follow-up..."
+              phx-hook="ChatInput"
+              phx-keydown="keydown"
+              disabled={@streaming}
+              class="w-full bg-transparent text-sm text-gray-900 dark:text-white/90 placeholder:text-black/25 dark:placeholder:text-white/25 resize-none outline-none leading-relaxed"
+            ><%= @input %></textarea>
+
+            <div class="flex items-center mt-3 gap-2">
+
+              <button
+                type="button"
+                id="mic-btn"
+                phx-hook="MicRecorder"
+                class={[
+                  "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-150",
+                  @recording && "text-red-500 dark:text-red-400 animate-pulse",
+                  not @recording && "text-black/40 hover:text-black/70 hover:bg-black/[0.06] dark:text-white/40 dark:hover:text-white/70 dark:hover:bg-white/[0.07]"
+                ]}
+                title="Click to speak"
+              >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3Z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" x2="12" y1="19" y2="22"/>
+                </svg>
+              </button>
+
+              <div class="flex-1" />
+
+              <span class="text-xs text-black/30 dark:text-white/30 bg-black/[0.05] dark:bg-white/[0.05] rounded-full px-3 py-1 select-none">
+                <%= @active_model %>
+              </span>
+
+              <%= if @streaming do %>
+                <button
+                  type="button"
+                  phx-click="stop_generation"
+                  class="w-8 h-8 rounded-full bg-gray-900 dark:bg-[#e8e8e8] text-white dark:text-[#0a0a0a] flex items-center justify-center hover:bg-black dark:hover:bg-white transition-colors duration-150"
+                  title="Stop generation"
+                >
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="4" y="4" width="16" height="16" rx="2"/>
+                  </svg>
+                </button>
+              <% else %>
+                <button
+                  type="submit"
+                  disabled={@input == ""}
+                  class="w-8 h-8 rounded-full bg-gray-900 dark:bg-[#e8e8e8] text-white dark:text-[#0a0a0a] flex items-center justify-center disabled:opacity-20 hover:bg-black dark:hover:bg-white transition-colors duration-150"
+                >
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"/>
+                  </svg>
+                </button>
+              <% end %>
+
+            </div>
+          </form>
+        </div>
+      </div>
+
+    <% end %>
+
+    <% end %>
+
+  </div>
+
+  <%!-- ── Cal.com booking embed ───────────────────────────────────────────── --%>
+  <%= if @cal_embed_open do %>
+    <div
+      class="fixed inset-0 bg-black/30 dark:bg-black/50 z-40 backdrop-blur-sm"
+      phx-click="close_cal_embed"
+    />
+    <div class="fixed right-0 top-0 bottom-0 w-full sm:w-[520px] bg-white dark:bg-[#111] shadow-2xl z-50 flex flex-col">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-black/[0.08] dark:border-white/[0.08] shrink-0">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-black/50 dark:text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+          </svg>
+          <span class="text-sm font-medium text-black/80 dark:text-white/80">Schedule a Meeting</span>
+        </div>
+        <button
+          phx-click="close_cal_embed"
+          class="w-8 h-8 flex items-center justify-center rounded-lg text-black/40 hover:text-black/80 hover:bg-black/[0.07] dark:text-white/40 dark:hover:text-white/80 dark:hover:bg-white/[0.07] transition-all duration-150"
+          title="Close"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <iframe
+        src={"https://cal.com/#{@calcom_username}#{if @cal_embed_event_type != "", do: "/#{@cal_embed_event_type}", else: ""}?embed=true&layout=month_view"}
+        class="flex-1 w-full border-0"
+        title="Schedule a meeting via Cal.com"
+        allow="fullscreen"
+      />
+    </div>
+  <% end %>
+
+</div>

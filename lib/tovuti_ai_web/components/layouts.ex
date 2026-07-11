@@ -12,6 +12,126 @@ defmodule TovutiAiWeb.Layouts do
   embed_templates "layouts/*"
 
   @doc """
+  Full-screen light auth layout. White background + multi-hue gradient mesh +
+  realistic ghost chat (light-mode) + backdrop-blur frosted layer + white modal card.
+  """
+  attr :flash, :map, required: true
+  attr :current_scope, :map, default: nil
+  slot :inner_block, required: true
+
+  def auth(assigns) do
+    ~H"""
+    <div style="min-height:100vh;width:100%;position:relative;background:#fafafa;overflow:hidden;font-family:'Sora',system-ui,sans-serif;">
+
+      <%!-- ① Static multi-hue gradient mesh (bottom layer) --%>
+      <div style="position:fixed;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(ellipse 65% 55% at 12% 38%,rgba(139,92,246,0.22) 0%,transparent 100%),radial-gradient(ellipse 58% 48% at 84% 18%,rgba(6,182,212,0.18) 0%,transparent 100%),radial-gradient(ellipse 50% 44% at 52% 88%,rgba(59,130,246,0.14) 0%,transparent 100%),radial-gradient(ellipse 42% 38% at 92% 72%,rgba(236,72,153,0.11) 0%,transparent 100%),radial-gradient(ellipse 48% 40% at 4% 82%,rgba(20,184,166,0.13) 0%,transparent 100%);"></div>
+
+      <%!-- ② Drifting orbs on top of mesh --%>
+      <div class="auth-orb-a" style="position:absolute;z-index:0;pointer-events:none;width:680px;height:680px;border-radius:50%;top:-200px;right:-120px;background:radial-gradient(circle,rgba(139,92,246,0.16) 0%,transparent 68%);"></div>
+      <div class="auth-orb-b" style="position:absolute;z-index:0;pointer-events:none;width:580px;height:580px;border-radius:50%;bottom:-160px;left:-80px;background:radial-gradient(circle,rgba(6,182,212,0.14) 0%,transparent 68%);"></div>
+      <div class="auth-orb-c" style="position:absolute;z-index:0;pointer-events:none;width:400px;height:400px;border-radius:50%;top:55%;left:48%;background:radial-gradient(circle,rgba(236,72,153,0.09) 0%,transparent 68%);"></div>
+
+      <%!-- ③ Ghost chat (light-mode replica, moderate opacity — blurred by the backdrop layer above) --%>
+      <div class="auth-ghost" aria-hidden="true">
+        <%!-- Sidebar --%>
+        <div style="width:200px;border-right:1px solid rgba(0,0,0,0.06);background:rgba(255,255,255,0.7);padding:18px 12px;display:flex;flex-direction:column;gap:10px;flex-shrink:0;">
+          <%!-- New chat button bar --%>
+          <div style="height:30px;border-radius:8px;background:rgba(0,0,0,0.06);width:100%;margin-bottom:6px;"></div>
+          <%!-- Section label --%>
+          <div style="height:5px;border-radius:3px;background:rgba(0,0,0,0.15);width:30%;margin-bottom:4px;"></div>
+          <%!-- Thread list items --%>
+          <div style="height:7px;border-radius:4px;background:rgba(0,0,0,0.12);width:88%;"></div>
+          <div style="height:7px;border-radius:4px;background:rgba(0,0,0,0.08);width:72%;"></div>
+          <div style="height:7px;border-radius:4px;background:rgba(0,0,0,0.08);width:92%;"></div>
+          <div style="height:7px;border-radius:4px;background:rgba(0,0,0,0.08);width:65%;"></div>
+          <div style="height:7px;border-radius:4px;background:rgba(0,0,0,0.08);width:80%;"></div>
+          <div style="height:7px;border-radius:4px;background:rgba(0,0,0,0.08);width:58%;"></div>
+          <div style="flex:1;"></div>
+          <%!-- Settings row --%>
+          <div style="height:28px;border-radius:8px;background:rgba(0,0,0,0.05);width:100%;"></div>
+        </div>
+        <%!-- Main chat area --%>
+        <div style="flex:1;padding:48px 72px;display:flex;flex-direction:column;gap:32px;overflow:hidden;background:rgba(250,250,250,0.5);">
+          <%!-- User bubble --%>
+          <div style="display:flex;justify-content:flex-end;">
+            <div style="background:rgba(0,0,0,0.07);border-radius:20px 20px 4px 20px;padding:12px 18px;max-width:300px;display:flex;flex-direction:column;gap:6px;">
+              <div style="height:6px;border-radius:3px;background:rgba(0,0,0,0.25);width:200px;"></div>
+            </div>
+          </div>
+          <%!-- AI reply --%>
+          <div style="display:flex;flex-direction:column;gap:8px;max-width:500px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <div style="width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#14b8a6);flex-shrink:0;"></div>
+              <div style="height:5px;border-radius:3px;background:rgba(0,0,0,0.12);width:40px;"></div>
+            </div>
+            <div style="height:6px;border-radius:3px;background:rgba(0,0,0,0.1);width:100%;"></div>
+            <div style="height:6px;border-radius:3px;background:rgba(0,0,0,0.08);width:91%;"></div>
+            <div style="height:6px;border-radius:3px;background:rgba(0,0,0,0.07);width:83%;"></div>
+          </div>
+          <%!-- User bubble --%>
+          <div style="display:flex;justify-content:flex-end;">
+            <div style="background:rgba(0,0,0,0.07);border-radius:20px 20px 4px 20px;padding:12px 18px;">
+              <div style="height:6px;border-radius:3px;background:rgba(0,0,0,0.22);width:150px;"></div>
+            </div>
+          </div>
+          <%!-- AI reply --%>
+          <div style="display:flex;flex-direction:column;gap:8px;max-width:480px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <div style="width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#14b8a6);flex-shrink:0;"></div>
+              <div style="height:5px;border-radius:3px;background:rgba(0,0,0,0.12);width:40px;"></div>
+            </div>
+            <div style="height:6px;border-radius:3px;background:rgba(0,0,0,0.1);width:100%;"></div>
+            <div style="height:6px;border-radius:3px;background:rgba(0,0,0,0.08);width:86%;"></div>
+            <div style="height:6px;border-radius:3px;background:rgba(0,0,0,0.08);width:94%;"></div>
+            <div style="height:6px;border-radius:3px;background:rgba(0,0,0,0.07);width:72%;"></div>
+          </div>
+          <%!-- Input bar at bottom --%>
+          <div style="margin-top:auto;border:1px solid rgba(0,0,0,0.08);border-radius:16px;padding:14px 16px;background:rgba(255,255,255,0.8);">
+            <div style="height:6px;border-radius:3px;background:rgba(0,0,0,0.07);width:45%;margin-bottom:12px;"></div>
+            <div style="display:flex;justify-content:flex-end;">
+              <div style="width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.12);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <%!-- ④ Frosted-glass backdrop — blurs everything (mesh + orbs + ghost) behind the modal --%>
+      <div class="auth-backdrop"></div>
+
+      <%!-- ⑤ White modal card --%>
+      <div
+        style="position:relative;z-index:10;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;"
+      >
+        <div
+          class="auth-card-enter"
+          style="width:100%;max-width:412px;background:rgba(255,255,255,0.94);border:1px solid rgba(0,0,0,0.07);border-radius:22px;padding:40px;box-shadow:0 2px 8px rgba(0,0,0,0.04),0 8px 28px rgba(0,0,0,0.07),0 32px 72px rgba(0,0,0,0.06);"
+        >
+          <%!-- Wordmark --%>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:32px;">
+            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#06b6d4,#14b8a6);flex-shrink:0;box-shadow:0 2px 8px rgba(139,92,246,0.35);"></div>
+            <span style="font-size:18px;font-weight:300;letter-spacing:0.1em;color:rgba(0,0,0,0.78);">tovuti</span>
+          </div>
+
+          <%!-- Flash messages --%>
+          <%= if msg = Phoenix.Flash.get(@flash, :error) do %>
+            <div style="background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.18);border-radius:10px;padding:11px 14px;font-size:13px;color:#b91c1c;margin-bottom:20px;line-height:1.5;">
+              {msg}
+            </div>
+          <% end %>
+          <%= if msg = Phoenix.Flash.get(@flash, :info) do %>
+            <div style="background:rgba(37,99,235,0.06);border:1px solid rgba(37,99,235,0.18);border-radius:10px;padding:11px 14px;font-size:13px;color:#1d4ed8;margin-bottom:20px;line-height:1.5;">
+              {msg}
+            </div>
+          <% end %>
+
+          {render_slot(@inner_block)}
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
   Renders your app layout.
 
   This function is typically invoked from every template,

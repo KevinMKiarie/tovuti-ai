@@ -103,3 +103,209 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* This file is for your main application CSS */
+
+/* ── Voice orb ─────────────────────────────────────────────────────────────── */
+
+@keyframes orb-breathe {
+  0%, 100% { transform: scale(0.95); }
+  50%       { transform: scale(1.03); }
+}
+
+@keyframes orb-think {
+  0%   { filter: hue-rotate(0deg)   brightness(1.0) saturate(1.2); }
+  50%  { filter: hue-rotate(50deg)  brightness(1.25) saturate(1.6); }
+  100% { filter: hue-rotate(0deg)   brightness(1.0) saturate(1.2); }
+}
+
+@keyframes orb-ripple {
+  0%   { transform: scale(1);   opacity: 0.45; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* idle: slow breath */
+[data-orb-state="idle"] .orb-core {
+  animation: orb-breathe 3.5s ease-in-out infinite;
+}
+
+/* listening: faster breath; JS drives scale via inline style */
+[data-orb-state="listening"] .orb-core {
+  animation: orb-breathe 1.6s ease-in-out infinite;
+  transition: transform 0.08s ease-out;
+}
+
+/* thinking: hue-rotate shimmer */
+[data-orb-state="thinking"] .orb-core {
+  animation: orb-think 1.8s ease-in-out infinite;
+}
+
+/* speaking: three staggered ripple rings */
+[data-orb-state="speaking"] .orb-core {
+  animation: orb-breathe 0.9s ease-in-out infinite;
+}
+[data-orb-state="speaking"] .orb-ring {
+  animation: orb-ripple 2.1s ease-out infinite;
+}
+[data-orb-state="speaking"] .orb-ring-2 { animation-delay: 0.7s; }
+[data-orb-state="speaking"] .orb-ring-3 { animation-delay: 1.4s; }
+
+/* hide rings when not speaking */
+[data-orb-state="idle"]      .orb-ring,
+[data-orb-state="listening"] .orb-ring,
+[data-orb-state="thinking"]  .orb-ring { opacity: 0; }
+
+/* ── Auth pages ────────────────────────────────────────────────────────────── */
+
+@keyframes auth-drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(28px, -52px) scale(1.04); }
+  66%       { transform: translate(-18px, 30px) scale(0.97); }
+}
+@keyframes auth-drift-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(-32px, 38px) scale(0.96); }
+  66%       { transform: translate(22px, -44px) scale(1.03); }
+}
+@keyframes auth-drift-c {
+  0%, 100% { transform: translate(0, 0); }
+  50%       { transform: translate(18px, 26px); }
+}
+@keyframes auth-reveal {
+  from { opacity: 0; transform: translateY(20px) scale(0.982); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.auth-orb-a { animation: auth-drift-a 24s ease-in-out infinite; }
+.auth-orb-b { animation: auth-drift-b 30s ease-in-out infinite; }
+.auth-orb-c { animation: auth-drift-c 18s ease-in-out infinite; }
+.auth-card-enter { animation: auth-reveal 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Ghost chat — visible at moderate opacity, blurred by the backdrop layer above it */
+.auth-ghost {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.28;
+  z-index: 1;
+  display: flex;
+}
+
+/* Full-screen frosted glass layer between ghost and modal */
+.auth-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(18px) saturate(1.6) brightness(1.04);
+  backdrop-filter: blur(18px) saturate(1.6) brightness(1.04);
+  background: rgba(250,250,250,0.42);
+}
+
+/* ── Modal inputs (light theme) ─────────────────────────────────────── */
+
+.auth-input {
+  width: 100%;
+  background: rgba(0,0,0,0.035);
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 10px;
+  padding: 11px 14px;
+  color: #1a1a1a;
+  font-size: 14px;
+  font-family: 'Sora', system-ui, sans-serif;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+}
+.auth-input::placeholder { color: rgba(0,0,0,0.28); }
+.auth-input:focus {
+  border-color: rgba(124,58,237,0.5);
+  background: rgba(124,58,237,0.03);
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.08);
+}
+.auth-input:-webkit-autofill,
+.auth-input:autofill {
+  -webkit-box-shadow: 0 0 0 100px #f7f5ff inset !important;
+  -webkit-text-fill-color: #1a1a1a !important;
+}
+
+.auth-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'Sora', system-ui, sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+  letter-spacing: 0.01em;
+  display: block;
+  text-align: center;
+  box-sizing: border-box;
+}
+.auth-btn:active { transform: scale(0.984); }
+
+.auth-btn-primary {
+  background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 60%, #14b8a6 100%);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(139,92,246,0.3), 0 1px 3px rgba(0,0,0,0.1);
+}
+.auth-btn-primary:hover {
+  opacity: 0.9;
+  box-shadow: 0 4px 20px rgba(139,92,246,0.38), 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.auth-btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(0,0,0,0.1) !important;
+  color: rgba(0,0,0,0.48);
+}
+.auth-btn-ghost:hover {
+  border-color: rgba(0,0,0,0.18) !important;
+  color: rgba(0,0,0,0.68);
+  background: rgba(0,0,0,0.025);
+}
+
+.auth-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: rgba(0,0,0,0.36);
+  margin-bottom: 6px;
+  font-family: 'Sora', system-ui, sans-serif;
+}
+
+.auth-link {
+  color: #7c3aed;
+  text-decoration: none;
+  transition: color 0.12s;
+}
+.auth-link:hover { color: #6d28d9; }
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+  color: rgba(0,0,0,0.28);
+  font-size: 12px;
+  font-family: 'Sora', system-ui, sans-serif;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid rgba(0,0,0,0.08);
+}
+
+.auth-field { margin-bottom: 16px; }
+
+.auth-error {
+  font-size: 12px;
+  color: #dc2626;
+  margin-top: 5px;
+  font-family: 'Sora', system-ui, sans-serif;
+}
