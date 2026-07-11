@@ -1,0 +1,105 @@
+<Layouts.auth flash={@flash} current_scope={@current_scope}>
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;gap:12px;">
+    <div>
+      <p style="font-size:21px;font-weight:400;color:rgba(0,0,0,0.82);margin-bottom:4px;line-height:1.3;">
+        Account
+      </p>
+      <p style="font-size:13px;color:rgba(0,0,0,0.38);word-break:break-all;">
+        {@current_scope.user.email}
+      </p>
+    </div>
+    <a
+      href={~p"/"}
+      style="font-size:13px;color:rgba(0,0,0,0.32);text-decoration:none;white-space:nowrap;padding-top:4px;transition:color 0.12s;"
+      onmouseover="this.style.color='rgba(0,0,0,0.65)'"
+      onmouseout="this.style.color='rgba(0,0,0,0.32)'"
+    >
+      ← Back
+    </a>
+  </div>
+
+  <p style="font-size:11px;text-transform:uppercase;letter-spacing:0.09em;color:rgba(0,0,0,0.28);margin-bottom:14px;">
+    Email address
+  </p>
+  <.form :let={f} for={@email_changeset} action={~p"/users/settings"} id="update_email">
+    <input type="hidden" name="action" value="update_email" />
+    <div class="auth-field">
+      <label class="auth-label" for="settings_email">New email</label>
+      <input
+        id="settings_email"
+        class="auth-input"
+        type="email"
+        name={f[:email].name}
+        value={Phoenix.HTML.Form.normalize_value("email", f[:email].value)}
+        autocomplete="username"
+        spellcheck="false"
+        required
+      />
+      <p :if={f[:email].errors != []} class="auth-error">
+        {f[:email].errors |> Enum.map(fn {msg, _} -> msg end) |> Enum.join(", ")}
+      </p>
+    </div>
+    <button class="auth-btn auth-btn-ghost" type="submit" phx-disable-with="Updating…">
+      Update email
+    </button>
+  </.form>
+
+  <div style="border-top:1px solid rgba(0,0,0,0.07);margin:28px 0;"></div>
+
+  <p style="font-size:11px;text-transform:uppercase;letter-spacing:0.09em;color:rgba(0,0,0,0.28);margin-bottom:14px;">
+    Password
+  </p>
+  <.form :let={f} for={@password_changeset} action={~p"/users/settings"} id="update_password">
+    <input type="hidden" name="action" value="update_password" />
+    <div class="auth-field">
+      <label class="auth-label" for="settings_pw">New password</label>
+      <input
+        id="settings_pw"
+        class="auth-input"
+        type="password"
+        name={f[:password].name}
+        autocomplete="new-password"
+        spellcheck="false"
+        required
+      />
+      <p :if={f[:password].errors != []} class="auth-error">
+        {f[:password].errors |> Enum.map(fn {msg, _} -> msg end) |> Enum.join(", ")}
+      </p>
+    </div>
+    <div class="auth-field">
+      <label class="auth-label" for="settings_pw_confirm">Confirm password</label>
+      <input
+        id="settings_pw_confirm"
+        class="auth-input"
+        type="password"
+        name={f[:password_confirmation].name}
+        autocomplete="new-password"
+        spellcheck="false"
+        required
+      />
+      <p :if={f[:password_confirmation].errors != []} class="auth-error">
+        {f[:password_confirmation].errors |> Enum.map(fn {msg, _} -> msg end) |> Enum.join(", ")}
+      </p>
+    </div>
+    <button class="auth-btn auth-btn-primary" type="submit" phx-disable-with="Saving…">
+      Save password →
+    </button>
+  </.form>
+
+  <div style="border-top:1px solid rgba(0,0,0,0.07);margin:28px 0;"></div>
+
+  <form action={~p"/users/log-out"} method="post" style="text-align:center;">
+    <input type="hidden" name="_method" value="delete" />
+    <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
+    <button
+      type="submit"
+      style="background:none;border:none;font-size:13px;color:rgba(0,0,0,0.28);cursor:pointer;font-family:'Sora',system-ui,sans-serif;transition:color 0.12s;padding:0;"
+      onmouseover="this.style.color='#dc2626'"
+      onmouseout="this.style.color='rgba(0,0,0,0.28)'"
+    >
+      Sign out
+    </button>
+  </form>
+
+</Layouts.auth>

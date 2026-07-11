@@ -1,0 +1,77 @@
+<Layouts.auth flash={@flash} current_scope={@current_scope}>
+
+  <p style="font-size:21px;font-weight:400;color:rgba(0,0,0,0.82);margin-bottom:6px;line-height:1.3;">
+    Hello, {@user.email}
+  </p>
+  <p style="font-size:13px;color:rgba(0,0,0,0.4);margin-bottom:28px;line-height:1.6;">
+    <%= if @user.confirmed_at, do: "Sign in to your account.", else: "Confirm your account to continue." %>
+  </p>
+
+  <.form
+    :if={!@user.confirmed_at}
+    for={@form}
+    id="confirmation_form"
+    action={~p"/users/log-in?_action=confirmed"}
+    phx-mounted={JS.focus_first()}
+  >
+    <input type="hidden" name={@form[:token].name} value={@form[:token].value} />
+    <button
+      name={@form[:remember_me].name}
+      value="true"
+      class="auth-btn auth-btn-primary"
+      type="submit"
+      phx-disable-with="Confirming…"
+    >
+      Confirm and stay signed in →
+    </button>
+    <button
+      class="auth-btn auth-btn-ghost"
+      type="submit"
+      style="margin-top:10px;"
+      phx-disable-with="Confirming…"
+    >
+      Confirm — this session only
+    </button>
+  </.form>
+
+  <.form
+    :if={@user.confirmed_at}
+    for={@form}
+    id="login_form"
+    action={~p"/users/log-in"}
+    phx-mounted={JS.focus_first()}
+  >
+    <input type="hidden" name={@form[:token].name} value={@form[:token].value} />
+    <%= if @current_scope do %>
+      <button class="auth-btn auth-btn-primary" type="submit" phx-disable-with="Signing in…">
+        Sign in →
+      </button>
+    <% else %>
+      <button
+        name={@form[:remember_me].name}
+        value="true"
+        class="auth-btn auth-btn-primary"
+        type="submit"
+        phx-disable-with="Signing in…"
+      >
+        Keep me signed in →
+      </button>
+      <button
+        class="auth-btn auth-btn-ghost"
+        type="submit"
+        style="margin-top:10px;"
+        phx-disable-with="Signing in…"
+      >
+        This session only
+      </button>
+    <% end %>
+  </.form>
+
+  <p
+    :if={!@user.confirmed_at}
+    style="margin-top:22px;font-size:12px;color:rgba(0,0,0,0.3);text-align:center;line-height:1.6;"
+  >
+    After confirming, set a password in account settings to sign in directly next time.
+  </p>
+
+</Layouts.auth>
