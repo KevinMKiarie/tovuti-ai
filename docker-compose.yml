@@ -1,0 +1,81 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tovuti_ai_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./priv/postgres-init:/docker-entrypoint-initdb.d
+
+  # Ollama runs on the host — do not start the container version or it
+  # will bind port 11434 and shadow the host instance that has your models.
+  # ollama:
+  #   image: ollama/ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+
+  ai_service:
+    build: ./ai_service
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - VOICE_CLIPS_DIR=/voice_clips
+      - COQUI_TOS_AGREED=1
+      - EVOLUTION_API_URL=http://evolution_api:8080
+      - EVOLUTION_API_KEY=${EVOLUTION_API_KEY:-tovuti_evo_key_change_me}
+      - EVOLUTION_INSTANCE=${EVOLUTION_INSTANCE:-tovuti}
+      - GMAIL_CREDENTIALS_PATH=/app_data/gmail_credentials.json
+      - GMAIL_TOKEN_PATH=/app_data/gmail_token.json
+      - CALCOM_API_KEY=${CALCOM_API_KEY:-}
+      - OLLAMA_URL=http://host.docker.internal:11434
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+      - tts_cache:/root/.local/share/tts
+      - voice_clips:/voice_clips
+      - ./priv/action_config:/app_data
+      - ./ai_service/app:/service/app
+    depends_on:
+      - evolution_api
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  evolution_api:
+    image: evoapicloud/evolution-api:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_URL=http://localhost:8080
+      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY:-tovuti_evo_key_change_me}
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://postgres:postgres@db:5432/evolution_api_dev
+      - DATABASE_CONNECTION_DB_PREFIX_NAME=evo
+      - DEL_INSTANCE=false
+      - QRCODE_LIMIT=30
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://redis:6379/6
+      - CACHE_REDIS_PREFIX_KEY=evolution
+      - CACHE_REDIS_SAVE_INSTANCES=false
+    volumes:
+      - evolution_instances:/evolution/instances
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  ollama_data:
+  hf_cache:
+  tts_cache:
+  voice_clips:
+  evolution_instances:

@@ -70,6 +70,17 @@ config :tovuti_ai, TovutiAiWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :tovuti_ai, dev_routes: true
 
+config :tovuti_ai, :ai_service_url, "http://localhost:8000"
+config :tovuti_ai, :ollama_url, "http://localhost:11434"
+config :tovuti_ai, :ollama_model, "llama3.1:8b"
+config :tovuti_ai, :tts_exaggeration, 0.5
+config :tovuti_ai, :tts_cfg_weight, 0.5
+config :tovuti_ai, :tts_pace, 1.0
+
+# Voice actions (Gmail, Cal.com, WhatsApp via Evolution API)
+config :tovuti_ai, :actions_enabled, false
+config :tovuti_ai, :calcom_api_key, ""
+
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"
 

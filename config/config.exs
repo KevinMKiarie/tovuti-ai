@@ -7,6 +7,19 @@
 # General application configuration
 import Config
 
+config :tovuti_ai, :scopes,
+  user: [
+    default: true,
+    module: TovutiAi.Accounts.Scope,
+    assign_key: :current_scope,
+    access_path: [:user, :id],
+    schema_key: :user_id,
+    schema_type: :id,
+    schema_table: :users,
+    test_data_fixture: TovutiAi.AccountsFixtures,
+    test_setup_helper: :register_and_log_in_user
+  ]
+
 config :tovuti_ai,
   ecto_repos: [TovutiAi.Repo],
   generators: [timestamp_type: :utc_datetime]
@@ -38,7 +51,7 @@ config :esbuild,
     args:
       ~w(js/app.js --bundle --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --alias:@=.),
     cd: Path.expand("../assets", __DIR__),
-    env: %{"NODE_PATH" => [Path.expand("../deps", __DIR__), Mix.Project.build_path()]}
+    env: %{"NODE_PATH" => [Path.expand("../assets/node_modules", __DIR__), Path.expand("../deps", __DIR__), Mix.Project.build_path()]}
   ]
 
 # Configure tailwind (the version is required)

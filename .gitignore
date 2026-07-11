@@ -35,3 +35,19 @@ tovuti_ai-*.tar
 npm-debug.log
 /assets/node_modules/
 
+.env
+
+SPEC.md
+
+# Python virtual environments
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Sensitive credentials
+**/gmail_credentials.json
+**/gmail_token.json
+
+# macOS metadata
+.DS_Store
